@@ -36,9 +36,13 @@ This repository is organized to reflect the different stages and components of t
 * Data Analysis and Visualization (R)
 
 ## Key Findings & Recommendations
+### Key Findings 
+1. Fitbit users demonstrate a higher level of physical activity compared to the average person. Additionally, an examination of their sleep habits indicates that Fitbit users are health-conscious .
+2. The activity profile shifts toward light activities. Moderate and very active physical activities are noticeable but to a lesser extent.
+
+### Recommendations
 1. The time window for ads is from 15:00 to 17:00, in which people would have finished their work-out or prepared for one. 
 (high level of motivation, high level of contentment, problem-product association, etc.)
-
 2. The ads content should show a healthy and active lifestyle in which light physical activities (a large ads portion) and 
 moderate/heavy physical activities (a smaller ads portion) are the focus.
 
@@ -46,6 +50,7 @@ moderate/heavy physical activities (a smaller ads portion) are the focus.
 ## Navigation
 
 You can explore the different folders to find the data, code, documentation, and the final case study document and presentation.
+>Plots can be found in `final_report.pptx` (for selected plots) and  `documentation/transformation/analyzing.nb.html` (for all plots and plotting scripts).
 
 ## Author
 [Link to my LinkedIn Profile](www.linkedin.com/in/lamvinam)
