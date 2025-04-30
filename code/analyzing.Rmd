@@ -1,0 +1,727 @@
+---
+title: "Analyzing Notebook"
+output: html_notebook
+author: "Lam Vi Nam"
+date: "2025-04-27"
+css: custom_styles.css
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+------------------------------------------------------------------------
+
+### Prepare Enviroment
+
+```{r, results="hide"}
+library(tidyverse)
+library(dm)
+library(lubridate)
+library(forcats)
+library(skimr)
+library(treemap)
+library(RColorBrewer)
+```
+
+```{r read_files, results="hide"}
+# read cleaned csv files
+source("../code/customized_functions/read_files_by_path.R") # load user function for reading csv files
+path <- "../data/cleaned" # directory path containing csv files
+cleaned_tables <- read_files_by_path(directory_path = path)
+```
+
+```{r, results="hide"}
+# unpack list to objects
+list2env(cleaned_tables, envir = .GlobalEnv)
+```
+
+```{r cleaned_schema}
+# Draw all schema
+dm_obj <- dm(activity_daily, calories_hourly, calories_minute, heartrate_second,
+             intensities_hourly, intensities_minute, mets_minute, sleep_minute,
+             steps_hourly, steps_minute, weight_NA)
+dm_draw(dm_obj, view_type="all",column_types = TRUE)
+```
+
+<br> <br> <br> <br>
+
+------------------------------------------------------------------------
+
+### Exploration Point 1.1: When Were Users Most Active By Hours?
+
+> [Assumption] "TotalIntensity" is Fitbit's way of quantifying the
+> overall physical effort exerted during a given hour
+
+<br> <br>
+
+##### *- Explore the table `intensities_hourly`*
+
+```{r}
+View(intensities_hourly)
+glimpse(intensities_hourly)
+```
+
+<br> <br>
+
+##### *- Transformation*
+
+-   Extract the hour from the `ActivityHour` column
+-   Then Sum the TotalIntensity grouped by col Id and the extracted hour
+    col
+
+```{r }
+intensities_hourly_mutated <- intensities_hourly %>%
+  mutate(activity_hour_extract = hour(ActivityHour))
+
+intensities_hourly_mutated <- intensities_hourly_mutated %>%
+  group_by(activity_hour_extract) %>%
+  summarise(sum_total_intensity = sum(TotalIntensity)) %>%
+  ungroup()
+```
+
+```{r}
+# order the levels from 0 to 23 for plotting
+intensities_hourly_mutated <- intensities_hourly_mutated %>%
+  mutate(activity_hour_extract = factor(activity_hour_extract, levels = 0:23)) %>%
+  mutate(activity_hour_extract = fct_rev(activity_hour_extract)) # Reverse the factor levels
+```
+
+<br> <br>
+
+##### *- Plotting*
+
+-   Horizontal bar chart
+
+```{r}
+# Create the horizontal bar chart
+ggplot(intensities_hourly_mutated, aes(x = sum_total_intensity, y = activity_hour_extract)) +
+  geom_col(fill = "steelblue") + # Use geom_col for pre-calculated sums, fill sets the bar color
+  labs(
+    title = "Activity Intensity by Hour of the Day",
+    subtitle = "Each value represent the start of a 1-hour window",
+    x = "Relative Intensities", # Set x-axis label to blank
+    
+    y = "Hour of the Day" # Label for the y-axis
+  ) +
+  theme_minimal() + # Start with a clean theme
+  theme(
+    panel.grid.major = element_blank(), # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    axis.text.x = element_blank(),   # Remove x-axis text (number marks)
+    axis.text.y = element_text(margin = margin(r = -20)) # adjusts axis text margin
+  )
+```
+
+> [Observations from the above chart]\
+> There are three groups of time period: peak, amping up, and winding
+> down.\
+> - The most easily regconizable peak intensity period is from 17:00 to
+> 20:00. The second one is from 12:00 to 15:00.\
+> - Amping up periods are time windows that precede the peaks and see a
+> relative increase in intensity levels. Those are: "8:00 to 12:00",
+> "15:00 to 17:00".\
+> - Winding down periods: the rest.\
+> - Worth noticing window: "15:00 to 17:00" (because it's both amping up
+> and winding down).
+
+<br> <br> <br> <br>
+
+### Exploration Point 1.2: When Was the Peak of Calorie Burned by Hours?
+
+> [Assumption]\
+> - `calories_hourly$Calories` refers to calories burned.
+
+<br> <br>
+
+##### *- Explore the table `calories_hourly`*
+
+```{r}
+View(calories_hourly)
+glimpse(calories_hourly)
+```
+
+<br> <br>
+
+##### *- Transformation*
+
+-   Extract the hour from `calories_hourly$ActivityHour`
+-   Sum `calories_hourly$Calories` up by hour -\> `hour_only`
+-   Factor `hour_only` for ordering on the y-axis
+
+```{r }
+hourly_calories_summary <- calories_hourly %>%
+  # Ensure ActivityHour is in datetime format if it's not already
+  # mutate(ActivityHour = as.POSIXct(ActivityHour)) %>% # Uncomment and adjust format if needed
+  mutate(hour_only = hour(ActivityHour)) %>% # Extract the hour (0-23)
+  group_by(hour_only) %>% # Group by the extracted hour
+  summarise(calories_sum = sum(Calories, na.rm = TRUE), .groups = 'drop') %>% 
+  ungroup()
+# We order the levels from 0 to 23
+hourly_calories_summary <- hourly_calories_summary %>%
+  mutate(hour_only = factor(hour_only, levels = 0:23)) %>%
+  mutate(hour_only = fct_rev(hour_only)) # Reverse the factor levels so 0 is at the top
+```
+
+<br> <br>
+
+##### *- Plotting*
+
+-   Bar chart
+
+```{r}
+# Create the bar chart
+ggplot(hourly_calories_summary, aes(x = calories_sum, y = hour_only)) +
+  geom_col(fill = "darkorange") + # Use geom_col for pre-calculated sums
+  labs(
+    title = "Levels of Calories Burned by Hours", # Add a title
+    subtitle = "Each value represent the start of a 1-hour window",
+    x = "Relative Calorie Burned", # Label for the x-axis (now calories)
+    y = "Hour of the Day" # Label for the y-axis (now hour)
+  ) +
+  theme_minimal() + # Use a clean theme
+  theme(
+    # Adjust theme elements for a horizontal bar chart
+    panel.grid.major.y = element_blank(), 
+    panel.grid.minor.y = element_blank(), 
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    axis.text.x = element_blank(),   # Remove x-axis text (number marks)
+    axis.text.y = element_text(margin = margin(r = -20)) # adjusts axis text margin
+  )
+```
+
+> [Observations from the above chart]\
+> - The calorie-burned pattern matchs the pattern of intensity, where
+> peak calorie-burned period is from 17:00 to 20:00. The second one is
+> from 12:00 to 15:00.\
+> - The calorie burned is quite noticeable from 21:00 to 8:00,
+> considering the relatively low intensity happened during that time
+> window.
+
+<br> <br> <br> <br>
+
+------------------------------------------------------------------------
+
+### Exploration Point 2:
+
+### 2.1 How Much Time was Spent for Active Activities
+
+<br> <br>
+
+##### *- Explore the table `activity_daily`*
+
+```{r}
+View(activity_daily)
+glimpse(activity_daily)
+```
+
+<br> <br>
+
+##### *- Transformation*
+
+-   Aggregate by Id, calculate sums, count days, and calculate
+    percentages
+-   Transform to long format for plotting purpose
+
+```{r}
+activity_aggregated <- activity_daily %>%
+  # Group the data by the 'Id' column
+  group_by(Id) %>%
+  # Summarise the minutes for each Id and count the number of days
+  summarise(
+    sum_VeryActiveMinutes = sum(VeryActiveMinutes),
+    sum_FairlyActiveMinutes = sum(FairlyActiveMinutes),
+    sum_LightlyActiveMinutes = sum(LightlyActiveMinutes),
+    no_days = n() # Count the number of rows for each Id (assuming each row is a day)
+  ) %>%
+  # Calculate total active minutes and the requested percentages
+  mutate(
+    total_active_minutes = sum_VeryActiveMinutes + sum_FairlyActiveMinutes + sum_LightlyActiveMinutes,
+
+    # Calculate percentage of each activity type over the total active minutes for that Id
+    very_active_percent = (sum_VeryActiveMinutes / total_active_minutes) * 100,
+    fairly_active_percent = (sum_FairlyActiveMinutes / total_active_minutes) * 100,
+    lightly_active_percent = (sum_LightlyActiveMinutes / total_active_minutes) * 100,
+
+    # Calculate percentage of total active minutes over the total possible minutes (days * 1440)
+    active_percent_daily = (total_active_minutes / (no_days * 1440)) * 100
+  ) %>%
+  # Ungroup the data frame after summarising and mutating
+  ungroup() 
+```
+
+```{r}
+activity_pivot_long <- activity_aggregated %>%
+  select(Id, very_active_percent, fairly_active_percent, lightly_active_percent, active_percent_daily) %>%
+  pivot_longer(
+    cols = c(very_active_percent, fairly_active_percent, lightly_active_percent),
+    names_to = "type_of_active_raw", # Temporary column for original names
+    values_to = "type_of_active_percent"   # New column for the percentage values
+  ) %>%
+  # Create the 'type_of_active' column with desired labels and order
+  mutate(
+    type_of_active = case_when(
+      type_of_active_raw == "lightly_active_percent" ~ "Lightly Active",
+      type_of_active_raw == "fairly_active_percent" ~ "Fairly Active",
+      type_of_active_raw == "very_active_percent" ~ "Very Active",
+      TRUE ~ type_of_active_raw # Should not happen with these columns
+    )
+  ) %>%
+  # Set the factor levels for 'type_of_active' in the desired order
+  mutate(
+    type_of_active = factor(type_of_active, levels = c("Lightly Active", "Fairly Active", "Very Active"))
+  ) %>%
+  select(-type_of_active_raw) # Remove the raw column
+```
+
+<br> <br>
+
+##### *- Plotting*
+
+-   Facet scatter plot
+
+```{r, results="hide"}
+# Create the correlation plot with specified facet order and coloring by group
+ggplot(activity_pivot_long, aes(x = active_percent_daily, y = type_of_active_percent, color = type_of_active)) +
+  geom_point(alpha = 0.6, size = 3) + # Use points for a scatter plot, alpha for transparency
+  scale_x_continuous(limits = c(0, 25)) + # control the x-axis limits
+  facet_wrap(~ type_of_active) + # Facet by type_of_active (now ordered)
+  # Manually set colors for each activity type
+  scale_color_manual(
+    values = c(
+      "Lightly Active" = "cornflowerblue",  # Lighter shade for Lightly Active
+      "Fairly Active" = "steelblue",   # Medium shade for Fairly Active
+      "Very Active" = "darkblue"       # Darker shade for Very Active
+    ),
+    guide = "none" # Remove the legend for color since it's faceted by type already
+  ) +
+  labs(
+    title = "Relationship between Active Activity Types and Active Activity Time",
+    x = "Proportion of active time over a day", 
+    y = "Proportion of active types"
+  ) +
+  theme_minimal() + # Clean theme
+  theme(
+    panel.grid.major = element_line(color = "grey90", size = 0.5), # Keep light grid lines for readability within facets
+    panel.grid.minor = element_blank(), # Remove minor grid lines
+    strip.text = element_text(face = "bold"), # Make facet titles bold
+    legend.position = "none" # no color legend
+  )
+```
+
+> [Observations from the above chart]\
+> - There's no correlation between active types and daily time spent for
+> active activities.  
+
+<br>
+
+-   Histogram
+
+```{r}
+# Create the histogram of active_percent_daily
+ggplot(activity_aggregated, aes(x = active_percent_daily)) +
+  geom_histogram(binwidth = 5, fill = "steelblue", color = "white") + # Create the histogram bars
+  scale_x_continuous(
+    breaks = seq(0, 25, by = 5)
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 25, by = 5)
+  ) +
+  labs(
+    title = "How Users Spent Time for Active Activities Daily",
+    subtitle = "Bin width = [0, 5]%, (5, 10]%, (10, 15]%, etc.",
+    x = "Proportion of Time Spent Daily (%)",
+    y = "User Count" # Label for the y-axis
+  ) +
+  theme_minimal() + # Use a clean theme
+  theme(
+    panel.grid.major.x = element_blank(),  # Remove minor vertical grid lines
+    panel.grid.minor.y = element_blank()  # Remove minor vertical grid lines
+  )
+```
+
+> [Observations from the above chart]\
+> - The amount of time spent for active activities daily is equal to 15%
+> on average.\
+> - The range from 10% to 20% daily time spent for active activities is
+> the most popular.
+
+<br> <br>
+
+### 2.2 When Users Were Active, Which Level of Activeness Did Users Spend Time For the Most?
+
+<br> <br>
+
+##### *- Transformation*
+
+```{r}
+# Calculate the mean percentage for each activity type and prepare data for stacking and labels
+for_stacked_bar <- activity_pivot_long %>%
+  # Group by the activity type
+  group_by(type_of_active) %>%
+  # Summarise to calculate the mean percentage for each group
+  summarise(
+    MeanPercentage = mean(type_of_active_percent, na.rm = TRUE)
+  ) %>%
+  ungroup() %>% # Ungroup the data
+  # Arrange by type_of_active factor levels for correct stacking
+  arrange(type_of_active) %>%
+  # Calculate the position for the text labels within the stacked bars
+  # This requires calculating cumulative sums
+  mutate(
+    # Calculate the cumulative sum of percentages
+    cumulative_percentage = cumsum(MeanPercentage),
+    # Calculate the text position as the midpoint of each segment
+    text_position = MeanPercentage / 2 + lag(cumulative_percentage, default = 0)
+  )
+```
+
+<br> <br>
+
+##### *- Plotting*
+
+-   Stacked bar chart
+
+```{r }
+# Create the base stacked bar chart
+stacked_bar_chart_annotate <- ggplot(for_stacked_bar, aes(x = "", y = MeanPercentage, fill = type_of_active)) +
+  geom_bar(stat = "identity", width = 0.5) + # Create the stacked bar
+  labs(
+    title = "Which Level of Activeness Did Users Spend Time For the Most?", # Add a title
+    x = "", # Remove x-axis label
+    y = "Average Percentage", # Y-axis label
+    fill = "Activity Types" # Title for the legend
+  ) +
+  theme_minimal() + # Use a clean theme
+  theme(
+    axis.title.x = element_blank(), # Remove x-axis title
+    axis.text.x = element_blank(), # Remove x-axis text (since it's a single bar)
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    panel.grid.major = element_blank(), # Remove major grid lines
+    panel.grid.minor = element_blank(), # Remove minor grid lines
+    plot.title = element_text(hjust = 0.6),# Center the plot title
+    legend.position = "top", # Position the legend
+    plot.margin = margin(10, 10, 10, -170, "pt") # left-aligned
+  )
+
+# Add data labels using annotate() for manual adjustment
+# You will need to manually adjust the 'y' coordinate for each label
+stacked_bar_chart_annotate <- stacked_bar_chart_annotate +
+  # Label for Lightly Active
+  annotate(
+    "text",
+    x = "", # X-position (center of the bar)
+    y = for_stacked_bar$text_position[for_stacked_bar$type_of_active == "Lightly Active"], # Calculated Y-position
+    label = paste0(round(for_stacked_bar$MeanPercentage[for_stacked_bar$type_of_active == "Lightly Active"], 1), "%"), # Formatted percentage
+    color = "black", # Label color (adjust as needed for visibility)
+    size = 4 # Label size
+    # Use vjust and hjust here if further fine-tuning is needed
+  ) +
+  # Label for Fairly Active
+  annotate(
+    "text",
+    x = "", # X-position (center of the bar)
+    y = for_stacked_bar$text_position[for_stacked_bar$type_of_active == "Fairly Active"], # Calculated Y-position
+    label = paste0(round(for_stacked_bar$MeanPercentage[for_stacked_bar$type_of_active == "Fairly Active"], 1), "%"), # Formatted percentage
+    color = "black", # Label color (adjust as needed for visibility)
+    size = 4, # Label size
+    vjust = 19
+    # Use vjust and hjust here if further fine-tuning is needed
+  ) +
+  # Label for Very Active
+  annotate(
+    "text",
+    x = "", # X-position (center of the bar)
+    y = for_stacked_bar$text_position[for_stacked_bar$type_of_active == "Very Active"], # Calculated Y-position
+    label = paste0(round(for_stacked_bar$MeanPercentage[for_stacked_bar$type_of_active == "Very Active"], 1), "%"), # Formatted percentage
+    color = "black", # Label color (adjust as needed for visibility)
+    size = 4, # Label size
+    vjust = 23
+    # Use vjust and hjust here if further fine-tuning is needed
+  ) +
+  # Add the "100%" note inside the plot
+  annotate(
+    "text",
+    x = "", # X-position (center of the bar)
+    y = 105, # Y-position (adjust this value to place the note correctly)
+    label = "(100% of time)",
+    vjust = 0, # Vertical justification
+    hjust = 0.5, # Horizontal justification
+    size = 4,
+    color = "black"
+  )
+stacked_bar_chart_annotate
+```
+
+> [Observations from the above chart]\
+> - The lightly active activities occupies a major proportion (84.9%),
+> dominating the two other types of active activites.
+
+<br> <br> <br> <br>
+
+------------------------------------------------------------------------
+
+### Exploration Point 3: How Many Hours per Day Did Users Sleep
+
+<br> <br>
+
+##### *- Explore the table `sleep_minute`*
+
+```{r}
+View(sleep_minute)
+glimpse(sleep_minute)
+```
+
+<br> <br>
+
+##### *- Transformation*
+
+-   From the `sleep_minute` table, extract date only from the date time
+    column `date`, then group the `Id` and `date_only` columns and
+    aggregate (sum) the `value` column to have `sleep_minute_daily` -\>
+    result in `aggregated_sleep_minute` table
+-   From `aggregated_sleep_minute` table, group `Id` column then take
+    the average of `sleep_minute_daily` -\> result in
+    `mean_sleep_minute` table
+
+```{r }
+# Step 1 & 2: Extract date and group by Id and date, then aggregate (sum) sleep minutes daily
+# Resulting table: aggregated_sleep_minute
+aggregated_sleep_minute <- sleep_minute %>%
+  # Ensure the 'date' column is in datetime format if it's not already
+  # mutate(date = as.POSIXct(date)) %>% # Uncomment and adjust format if needed
+  mutate(date_only = as.Date(date)) %>% # Extract date only
+  group_by(Id, date_only) %>% # Group by Id and the extracted date
+  summarise(sleep_minute_daily = sum(value, na.rm = TRUE), .groups = 'drop') %>% # Sum the sleep minutes daily, .groups = 'drop' removes grouping
+  ungroup() # Ensure ungrouping (redundant with .groups='drop' but good practice)
+
+# Step 3 & 4: Group by Id from aggregated_sleep_minute and take the average of sleep_minute_daily
+# Resulting table: mean_sleep_minute
+mean_sleep_minute <- aggregated_sleep_minute %>%
+  group_by(Id) %>% # Group by Id
+  summarise(mean_sleep_minute = mean(sleep_minute_daily, na.rm = TRUE), .groups = 'drop') %>% # Calculate the average daily sleep minutes per Id
+  ungroup() # Ensure ungrouping
+
+# Print the resulting tables (optional, for verification)
+# print("Aggregated Daily Sleep Minutes:")
+# print(aggregated_sleep_minute)
+# print("Mean Daily Sleep Minutes per User:")
+# print(mean_sleep_minute)
+```
+
+<br> <br>
+
+##### *- Plotting*
+
+-   Histogram
+
+```{r}
+ggplot(mean_sleep_minute, aes(x = mean_sleep_minute/60)) +
+  geom_histogram(binwidth = 3
+                 , fill = "skyblue", color = "white", alpha = 0.8) + 
+  scale_x_continuous(breaks = seq(0, 15, by = 3)) +
+  scale_y_continuous(breaks = seq(0, 30, by = 2)) +
+  labs(
+    title = "Sleep Habits of Users", 
+    subtitle = "Bin width = [0, 3], (3, 6], (6, 9], etc.",
+    x = "Average Daily Sleep Hours", 
+    y = "User Count"
+  ) +
+  theme_minimal() + 
+  theme(
+    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+  ) 
+```
+
+> [Observations from the above chart]\
+> - Most of the users already had a decent amount of sleep hours (more
+> than 6 hours per day).\
+> - Suprisingly the group of users who had 9-to-12-hour sleep is the
+> peak.
+
+<br> <br> <br> <br>
+
+------------------------------------------------------------------------
+
+### Exploration Point 4:
+
+### 4.1 How Far Did Users Walk/Run Daily
+
+> [Assumption]\
+> - Values in the column `TotalDistance` are kilometers (km).\
+> - TotalDistance is Fitbit's estimates of the real-world distance the
+> user covered (physical ground).
+
+<br> <br>
+
+##### *- Explore the table `activity_daily`*
+
+```{r}
+View(activity_daily)
+glimpse(activity_daily)
+```
+
+<br> <br>
+
+##### *- Transformation*
+
+-   Aggregate (sum) `TotalDistance` grouped by `Id`
+
+```{r }
+activity_daily_avg <- activity_daily %>%
+  group_by(Id) %>%
+  summarise(AverageTotalDistance = mean(TotalDistance, na.rm = TRUE)) %>%
+  mutate(Id = as.character(Id))
+```
+
+<br> <br>
+
+##### *- Plotting*
+
+-   State the type of plot here
+
+```{r}
+ggplot(activity_daily_avg, aes(x = AverageTotalDistance)) +
+  geom_histogram(binwidth = 1
+                 , fill = "forestgreen", color = "white", alpha = 0.8) + # Adjust binwidth as needed (e.g., 1 unit)
+  scale_y_continuous(breaks = seq(0, 20, by = 5)) +
+  scale_x_continuous(breaks = seq(0, 20, by = 1)) +
+  labs(
+    title = "How Far Did Users Walk/Run Daily", 
+    subtitle = "Bin width = [0, 1], (1, 2], (2, 3], etc.",
+    x = "Distance (kilometers)", 
+    y = "User Count"
+  ) +
+  theme_minimal() + 
+  theme(
+    panel.grid.major.x = element_blank(), # Remove major vertical grid lines
+  ) 
+```
+
+> [Observations from the above chart]\
+> - There two groups of users: below 4-km enjoyers and above 4-km
+> enjoyers.\
+> - Anything above the 9 km milestone is not popular.
+
+<br> <br> <br> <br>
+
+### 4.2 How Intense Were the Distance-based Exercises
+
+> [Assumption]\
+> - LightActiveDistance: includes leisurely walking or other low-effort
+> movements.\
+> - ModeratelyActiveDistance: includes activities like brisk walking,
+> moderate cycling, or other activities that elevate your heart rate and
+> breathing somewhat but where you can still hold a conversation.\
+> - VeryActiveDistance: includes activities like running, high-intensity
+> interval training (HIIT), or other strenuous efforts where you are
+> breathing heavily and finding it difficult to speak in full sentences.
+
+<br> <br>
+
+##### *- Transformation*
+
+-   Calculate the proportion of summed up distance groups
+-   Then transform to long format for treemap plot
+
+```{r }
+# Calculate the sum of each activity distance column across all rows
+distance_sums <- activity_daily %>%
+  summarise(
+    SumVeryActiveDistance = sum(VeryActiveDistance, na.rm = TRUE),
+    SumModeratelyActiveDistance = sum(ModeratelyActiveDistance, na.rm = TRUE),
+    SumLightActiveDistance = sum(LightActiveDistance, na.rm = TRUE),
+    SumSedentaryActiveDistance = sum(SedentaryActiveDistance, na.rm = TRUE)
+  )
+# This sum will be used as the denominator for calculating proportions
+sum_of_components <- distance_sums$SumVeryActiveDistance +
+                     distance_sums$SumModeratelyActiveDistance +
+                     distance_sums$SumLightActiveDistance +
+                     distance_sums$SumSedentaryActiveDistance
+
+# Prepare data frame for treemap plot
+# Need to use pivot_longer to transform into long format
+# Calculate the percentage here, which will be used in the label
+treemap_data <- distance_sums %>%
+  pivot_longer(
+    cols = everything(), # Select all columns (the sum columns)
+    names_to = "ActivityTypeRaw", # Temporary column for the original column names
+    values_to = "TotalDistanceSum" # New column for the total distance sum for each type
+  ) %>%
+  # Clean up the ActivityType names and create the final ActivityType column
+  mutate(
+    ActivityType = case_when(
+      ActivityTypeRaw == "SumVeryActiveDistance" ~ "Very Active",
+      ActivityTypeRaw == "SumModeratelyActiveDistance" ~ "Moderately Active",
+      ActivityTypeRaw == "SumLightActiveDistance" ~ "Light Active",
+      ActivityTypeRaw == "SumSedentaryActiveDistance" ~ "Sedentary Active",
+    ),
+    # Calculate the percentage of each activity type relative to the sum of components
+    # This percentage is calculated BEFORE plotting and added as a column
+    Percentage = round((TotalDistanceSum / sum_of_components) * 100, 1)
+    ) %>%
+  select(ActivityType, Percentage)
+# Pre-compile labels for the plot
+treemap_data <- treemap_data %>%
+  mutate(
+    Label = paste(
+      ActivityType," Distance",
+      "\n", 
+      Percentage, "%",
+      sep = ""
+    )
+  )
+```
+
+<br> <br>
+
+##### *- Plotting*
+
+-   Treemap
+
+```{r}
+# Custom color assignments (reversed RdYlGn with manual selection)
+custom_colors <- brewer.pal(11, "RdYlGn")[c(5, 3, 11, 1)]  # Red, orange, light orange, green
+names(custom_colors) <- c("Very Active", "Moderately Active", "Light Active", "Sedentary Active")
+
+# Ensure your treemap_data is ordered correctly (critical for color matching)
+treemap_data <- treemap_data %>%
+  mutate(ActivityType = factor(ActivityType, levels = names(custom_colors))) %>%
+  arrange(ActivityType)
+
+# Create treemap with manual colors
+treemap(
+  treemap_data,
+  index = "Label",          # Use precomputed labels
+  vSize = "Percentage",     # Box sizes
+  title = "Distance Breakdown By Activities (Sedentary Active Distance 0.01% not plotted)",
+  fontsize.title = 14,
+  fontsize.labels = 12,
+  fontcolor.labels = "black",
+  border.col = "white",
+  palette = custom_colors,             # Color palette
+  inflate.labels = TRUE           # Ensure labels are visible
+)
+```
+
+> [Observations from the above chart]\
+> - Lightly active level has a 62.2% share of the total distance.\
+> - Moderately active (10.5%) and very active (27.2%) levels are also
+> noticeable.\
+> - Sedentary active level (0.01%) is minuscule.
+
+------------------------------------------------------------------------
+
+<br> <br> <br> <br>
+
+------------------------------------------------------------------------
+
+> [Note] This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook.
+> When you execute code within the notebook, the results appear beneath
+> the code. The preview shows you a rendered HTML copy of the contents
+> of the editor. Consequently, unlike *Knit*, *Preview* does not run any
+> R code chunks. Instead, the output of the chunk when it was last run
+> in the editor is displayed. When you save the notebook, an HTML file
+> containing the code and output will be saved alongside it (click the
+> *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).

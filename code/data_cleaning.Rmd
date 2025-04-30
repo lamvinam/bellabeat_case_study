@@ -1,0 +1,166 @@
+---
+title: "data_cleaning"
+author: "nam"
+date: "2025-04-24"
+output: html_document
+---
+
+# -----------------------------------------------------------------------------
+# read files and summarise reports
+
+# read a list of csv files
+```{r read_files}
+source("customized_functions/read_files_by_path.R")
+path <- "../data/merged/"
+tables <- read_files_by_path(directory_path = path)
+```
+
+# get metadata as a csv file
+```{r}
+source("customized_functions/get_metadata.R")
+metadata_table <- get_metadata(tables)
+write.csv(metadata_table, "../metadata/metadata.csv", row.names=FALSE)
+```
+# skim reports ("before")
+```{r}
+source("customized_functions/write_skim_report.R")
+out_path <- "metadata/skim_summary.csv"
+write_skim_report(tables, out_path)
+```
+# By reading metadata report and skim report:
+# -    Missing Data -> Detection: one column in weight_NA table
+# -    Duplicates -> No Detection
+# -    Extra white spaces in character cols -> No Detection
+# -    Column Data Type Issues -> Detection: All date time columns are character
+# -    Invalid Values -> No Detection
+
+
+# -----------------------------------------------------------------------------
+# 1.    Missing Data
+# weight_NA
+```{r}
+query <- tables[["weight_NA"]] %>% # count by grouped Id
+  group_by(Id, Fat) %>%
+  # Count the number of rows in each group.
+  # The 'n()' function counts rows within the current group.
+  summarise(count = n(), .groups = 'drop') %>% # .groups = 'drop' removes grouping after summarizing
+  # Arrange the results by the 'id' column
+  arrange(Id)
+print(query) 
+```
+# The column Fat has 94% values missing. 
+# Do not have enough values for meaningful filling.
+# Drop column Fat
+```{r}
+tables$weight_NA <- tables$weight_NA %>% select(-Fat) # drop NA
+```
+
+
+# -----------------------------------------------------------------------------
+# 2.    Column Data Type (cast datetime columns to the correct datetime types)
+```{r include=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+# activity_daily
+```{r}
+tables[["activity_daily"]] %>% head(1) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$activity_daily$ActivityDate <- mdy(tables$activity_daily$ActivityDate)
+```
+
+# calories_hourly
+```{r}
+tables[["calories_hourly"]] %>% head(10) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$calories_hourly$ActivityHour <- mdy_hms(tables$calories_hourly$ActivityHour)
+```
+
+
+# calories_minute
+```{r}
+tables[["calories_minute"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$calories_minute$ActivityMinute <- mdy_hms(tables$calories_minute$ActivityMinute)
+```
+
+# heartrate_second
+```{r}
+tables[["heartrate_second"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$heartrate_second$Time <- mdy_hms(tables$heartrate_second$Time)
+```
+
+# intensities_hourly
+```{r}
+tables[["intensities_hourly"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$intensities_hourly$ActivityHour <- mdy_hms(tables$intensities_hourly$ActivityHour)
+```
+
+# intensities_minute
+```{r}
+tables[["intensities_minute"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$intensities_minute$ActivityMinute <- mdy_hms(tables$intensities_minute$ActivityMinute)
+```
+
+# mets_minute
+```{r}
+tables[["mets_minute"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$mets_minute$ActivityMinute <- mdy_hms(tables$mets_minute$ActivityMinute)
+```
+
+# sleep_minute
+```{r}
+tables[["sleep_minute"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$sleep_minute$date <- mdy_hms(tables$sleep_minute$date)
+```
+
+# steps_hourly
+```{r}
+tables[["steps_hourly"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$steps_hourly$ActivityHour <- mdy_hms(tables$steps_hourly$ActivityHour)
+```
+
+# steps_minute
+```{r}
+tables[["steps_minute"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$steps_minute$ActivityMinute <- mdy_hms(tables$steps_minute$ActivityMinute)
+```
+
+# weight_NA
+```{r}
+tables[["weight_NA"]] %>% head(5) # run this twice (before & after casting) for checking 
+```
+```{r}
+tables$weight_NA$Date <- mdy_hms(tables$weight_NA$Date)
+```
+
+# -----------------------------------------------------------------------------
+# Write cleaned tables to csv files
+```{r}
+source("./customized_functions/write_files_to_csv.R")
+write_files_to_csv(list_of_tables=tables, path="../data/cleaned")
+```
+
+# skim reports ("after")
+```{r}
+source("customized_functions/write_skim_report.R")
+out_path <- "metadata/skim_summary_after.csv"
+write_skim_report(tables, out_path)
+```

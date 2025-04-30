@@ -1,0 +1,158 @@
+---
+title: "file_ingestion_to_msql"
+output: html_notebook
+---
+
+# --- R Notebook Chunk 1: Load Libraries ---
+# Install if you don't have them:
+``` {r install_dependencies}
+install.packages("readr")
+install.packages("RMariaDB")
+library(readr)
+library(RMariaDB)
+```
+
+# --- R Notebook Chunk 2: Database Connection Setup ---
+# Replace with your actual database details
+```{r database_config}
+db_user <- "root"
+db_password <- "admin"
+db_name <- "fitbit_fitness_tracker_data"
+db_host <- "localhost" # Or your server IP/hostname
+db_port <- 3306        # Default MySQL port
+```
+
+# Establish the connection
+``` {r connect_to_db}
+con <- dbConnect(RMariaDB::MariaDB(),
+                 user = db_user,
+                 password = db_password,
+                 dbname = db_name,
+                 host = db_host,
+                 port = db_port)
+```
+
+# Check if connection is successful
+``` {r validate_db_connection}
+if (dbIsValid(con)) {
+  message("Successfully connected to the database.")
+} else {
+  stop("Database connection failed!")
+}
+```
+
+# --- R Notebook Chunk 3: Ingestion Function ---
+```{r ingestion_function}
+ingest_csv_to_mysql <- function(file_path, db_connection, table_name, ...) {
+#' Ingests a CSV file into a MySQL database table.
+#'
+#' @param file_path The full path to the CSV file.
+#' @param db_connection A valid database connection object.
+#' @param table_name The name for the new database table.
+#' @param ... Additional arguments passed to readr::read_csv and dbWriteTable.
+#' @return TRUE if successful, FALSE otherwise.
+
+# File Existence Check 
+   if (!file.exists(file_path)) {
+    warning("File not found: ", file_path)
+    return(FALSE)
+   }
+  
+# Reading the CSV File with Error Handling
+  message("Reading file: ", file_path)
+  # Use read_csv for robust parsing
+  data_to_ingest <- tryCatch({
+    readr::read_csv(file_path, show_col_types = FALSE, ...)
+  }, error = function(e) {
+    warning("Error reading CSV ", file_path, ": ", e$message)
+    return(NULL)
+  })
+  
+# Handling CSV Read Failure (Continued)
+  if (is.null(data_to_ingest)) {
+    return(FALSE)
+  }
+  
+# Writing Data to the Database with Error Handling
+  message("Writing data to MySQL table: ", table_name)
+  # Write data to the database table
+  # Use overwrite = TRUE to replace the table if it exists
+  # Use append = TRUE to add rows to an existing table
+  success <- tryCatch({
+    dbWriteTable(db_connection, name = table_name, value = data_to_ingest, overwrite = TRUE, ...) # Choose overwrite or append
+    TRUE
+  }, error = function(e) {
+    warning("Error writing to DB table ", table_name, ": ", e$message)
+    return(FALSE)
+  })
+
+  
+# Reporting Success  
+  if (success) {
+    message("Successfully ingested ", file_path, " into table ", table_name)
+  }
+  
+# Returning the Final Status
+  return(success)
+}
+```
+
+# --- R Notebook Chunk 4: Ingest all CSVs in WD ---
+```{r} 
+# List all files ending with .csv in the current working directory (.)
+csv_files_in_wd <- list.files(path = ".", pattern = "\\.csv$", full.names = TRUE)
+
+if (length(csv_files_in_wd) == 0) {
+  message("No CSV files found in the working directory.")
+} else {
+  message("Found ", length(csv_files_in_wd), " CSV files.")
+  for (file in csv_files_in_wd) {
+    # Create a table name from the file name (e.g., "my_data.csv" -> "my_data")
+    table_name <- tools::file_path_sans_ext(basename(file))
+    # Ensure valid MySQL table names (e.g., replace hyphens with underscores if needed)
+    table_name <- gsub("-", "_", table_name)
+
+    # Call the ingestion function for each file
+    ingest_csv_to_mysql(file_path = file, db_connection = con, table_name = table_name)
+  }
+}
+```
+
+
+
+
+# --- R Notebook Chunk 4: Example Usage (Ingest all CSVs in WD) ---
+
+# Set working directory
+```{r set_wd}
+setwd("C:/Users/user/Desktop/GG DRIVE/DA/Course_DA_Google/case_study/bella/FitBit Fitness Tracker Data")
+```
+
+``` {r}
+# List all files ending with .csv in the current working directory (.)
+csv_files_in_wd <- list.files(path = ".", pattern = "\\.csv$", full.names = TRUE)
+
+# ingest and create table in db using file names
+if (length(csv_files_in_wd) == 0) {
+  message("No CSV files found in the working directory.")
+} else {
+  message("Found ", length(csv_files_in_wd), " CSV files.")
+  for (file in csv_files_in_wd) {
+    # Create a table name from the file name (e.g., "my_data.csv" -> "my_data")
+    table_name <- tools::file_path_sans_ext(basename(file))
+    # Ensure valid MySQL table names (e.g., replace hyphens with underscores if needed)
+    table_name <- gsub("-", "_", table_name)
+    # Call the ingestion function for each file
+    ingest_csv_to_mysql(file_path = file, db_connection = con, table_name = table_name)
+  }
+}
+```
+
+# --- R Notebook Chunk 5: Close Database Connection ---
+# Good practice to close the connection when done
+```{r}
+if (dbIsValid(con)) {
+  dbDisconnect(con)
+  message("Database connection closed.")
+}
+```

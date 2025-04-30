@@ -1,0 +1,97 @@
+---
+title: "data_mapping_bella_case_study"
+author: "nam"
+date: "2025-04-23"
+output: html_document
+---
+# Summary: Read the tables (csv files) then compare their structure in logical pairs
+# 
+
+```{r, include=FALSE}
+library(readr)
+library(tidyverse)
+```
+
+```{r, include=FALSE}
+source("customized_functions/compare_dataframe_structure.R")
+source("customized_functions/compare_and_union.R")
+in_path <- "../data/fitbit_fitness_tracker_data(source)"
+out_path <- "../data/"
+```
+
+```{r activity_daily}
+file_in_1 <- "dailyActivity_merged_1.csv"
+file_in_2 <- "dailyActivity_merged_2.csv"
+file_out <- "activity_daily.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r calories_hourly}
+file_in_1 <- "hourlycalories_merged_1.csv"
+file_in_2 <- "hourlycalories_merged_2.csv"
+file_out <- "calories_hourly.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r calories_minute}
+file_in_1 <-"minutecaloriesnarrow_merged_1.csv"
+file_in_2 <-"minutecaloriesnarrow_merged_2.csv"
+file_out <-"calories_minute.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r heartrate_second}
+file_in_1 <-"heartrate_seconds_merged_1.csv"
+file_in_2 <-"heartrate_seconds_merged_2.csv"
+file_out <-"heartrate_second.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r intensities_hourly}
+file_in_1 <-"hourlyintensities_merged_1.csv"
+file_in_2 <-"hourlyintensities_merged_2.csv"
+file_out <-"intensities_hourly.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r intensities_minute}
+file_in_1 <-"minuteintensitiesnarrow_merged_1.csv"
+file_in_2 <-"minuteintensitiesnarrow_merged_2.csv"
+file_out <-"intensities_minute.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r mets_minute}
+file_in_1 <-"minutemetsnarrow_merged_1.csv"
+file_in_2 <-"minutemetsnarrow_merged_2.csv"
+file_out <-"mets_minute.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r sleep_minute}
+file_in_1 <-"minutesleep_merged_1.csv"
+file_in_2 <-"minutesleep_merged_2.csv"
+file_out <-"sleep_minute.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r steps_hourly}
+file_in_1 <-"hourlysteps_merged_1.csv"
+file_in_2 <-"hourlysteps_merged_2.csv"
+file_out <-"steps_hourly.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r steps_minute}
+file_in_1 <-"minutestepsnarrow_merged_1.csv"
+file_in_2 <-"minutestepsnarrow_merged_2.csv"
+file_out <-"steps_minute.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```
+
+```{r weight_NA}
+file_in_1 <- "weightloginfo_merged_1.csv"
+file_in_2 <- "weightloginfo_merged_2.csv"
+file_out <- "weight_NA.csv"
+compare_and_union(in_path, out_path, file_in_1, file_in_2, file_out)
+```

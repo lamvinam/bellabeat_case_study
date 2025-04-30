@@ -1,0 +1,74 @@
+---
+title: "Analyzing Notebook Template"
+output: html_notebook
+author: "Lam Vi Nam"
+date: "2025-04-27"
+css: custom_styles.css
+---
+
+***
+
+### Prepare Environment
+```{r, include = FALSE}
+library(tidyverse)
+library(dm)
+library(lubridate)
+library(forcats)
+library(skimr)
+```
+```{r read_files, include = FALSE}
+# read clean csv files
+source("C:/Users/user/Desktop/GG DRIVE/DA/Course_DA_Google/case_study/bella/code/customized_functions/read_files_by_path.R") # load user function for reading csv files
+path <- "" # directory path containing csv files
+cleaned_tables <- read_files_by_path(directory_path = path)
+```
+```{r, include = FALSE}
+# unpack list to objects
+list2env(cleaned_tables, envir = .GlobalEnv) 
+```
+``` {r cleaned_schema}
+# Draw all schema
+dm_obj <- dm(table_1, table_2) # manually type object name (tibble/df) here
+dm_draw(dm_obj, view_type="all",column_types = TRUE)
+```
+
+***
+
+### Exploration Point 1: ...
+>[Assumption] State assumptions here
+
+<br>
+<br>
+
+##### *- Explore the table `table_name`*
+
+```{r}
+View(intensities_hourly)
+glimpse(intensities_hourly)
+```
+
+<br>
+<br>
+
+##### *- Transformation* 
+- State the transformation steps here
+```{r }
+
+```
+
+<br>
+<br>
+
+##### *- Plotting*
+- State the type of plot here
+```{r}
+
+```
+>[Observations from the above chart]  
+state your observations here
+
+<br>
+<br>
+<br>
+<br>
+

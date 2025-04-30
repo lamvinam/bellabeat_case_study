@@ -1,0 +1,24 @@
+---
+title: "cleaned_schema"
+author: "nam"
+date: "2025-04-26"
+output: html_document
+---
+# -----------------------------------------------------------------------------
+# read cleaned csv files 
+```{r read_files, include=FALSE}
+source("customized_functions/read_files_by_path.R")
+path <- "../data/cleaned"
+cleaned_tables <- read_files_by_path(directory_path = path)
+```
+```{r cleaned_schema}
+library(dm)
+list2env(cleaned_tables, envir = .GlobalEnv)
+
+# Create dm object from the list of data frames
+dm_obj <- dm(activity_daily, calories_hourly, calories_minute, heartrate_second,
+             intensities_hourly, intensities_minute, mets_minute, sleep_minute,
+             steps_hourly, steps_minute, weight_NA)
+diagram <- dm_draw(dm_obj, view_type="all",column_types = TRUE)
+diagram
+```

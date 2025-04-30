@@ -1,0 +1,155 @@
+---
+title: "data_mapping_bella_case_study"
+author: "nam"
+date: "2025-04-23"
+output: html_document
+---
+# Summary: Read the tables (csv files) then compare their structure in logical pairs
+# 
+
+```{r, include=FALSE}
+library(readr)
+library(tidyverse)
+```
+
+```{r, include=FALSE}
+source("customed_functions/compare_dataframe_structure.R")
+```
+
+# table pair 1
+```{r activity_daily}
+dailyActivity_1 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/dailyActivity_merged_1.csv"))
+
+dailyActivity_2 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/dailyActivity_merged_2.csv"))
+
+output <- compare_dataframe_structure(dailyActivity_1, dailyActivity_2)
+cat(output,"[activity_daily]")
+```
+
+# table pair 2
+```{r calories_hourly}
+hourlycalories_merged_1 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/hourlycalories_merged_1.csv"))
+
+hourlycalories_merged_2 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/hourlycalories_merged_2.csv"))
+
+output <- compare_dataframe_structure(hourlycalories_merged_1, hourlycalories_merged_2)
+cat(output,"[calories_hourly]")
+```
+
+# table pair 3
+```{r calories_minute}
+minutecaloriesnarrow_merged_1 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/minutecaloriesnarrow_merged_1.csv"))
+
+minutecaloriesnarrow_merged_2 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/minutecaloriesnarrow_merged_2.csv"))
+
+output <- compare_dataframe_structure(minutecaloriesnarrow_merged_1, minutecaloriesnarrow_merged_2)
+cat(output,"[calories_minute]")
+```
+
+# table pair 4
+```{r heartrate_second}
+heartrate_seconds_merged_1 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/heartrate_seconds_merged_1.csv"))
+
+heartrate_seconds_merged_2 <- suppressMessages(read_csv("../fitbit_fitness_tracker_data/heartrate_seconds_merged_2.csv"))
+
+output <- compare_dataframe_structure(heartrate_seconds_merged_1, heartrate_seconds_merged_2)
+cat(output,"[heartrate_second]")
+```
+
+# table pair 5
+```{r intensities_hourly}
+hourlyintensities_merged_1 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/hourlyintensities_merged_1.csv"))
+
+hourlyintensities_merged_2 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/hourlyintensities_merged_2.csv"))
+
+output <- compare_dataframe_structure(
+  hourlyintensities_merged_1, hourlyintensities_merged_2)
+
+cat(output,"[intensities_hourly]")
+```
+
+# table pair 6
+```{r intensities_minute}
+minuteintensitiesnarrow_merged_1 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minuteintensitiesnarrow_merged_1.csv"))
+
+minuteintensitiesnarrow_merged_2 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minuteintensitiesnarrow_merged_2.csv"))
+
+output <- compare_dataframe_structure(
+  minuteintensitiesnarrow_merged_1, minuteintensitiesnarrow_merged_2)
+
+cat(output,"[intensities_minute]")
+```
+
+# table pair 7
+```{r mets_minute}
+minutemetsnarrow_merged_1 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minutemetsnarrow_merged_1.csv"))
+
+minutemetsnarrow_merged_2 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minutemetsnarrow_merged_2.csv"))
+
+output <- compare_dataframe_structure(
+  minutemetsnarrow_merged_1, minutemetsnarrow_merged_2)
+
+cat(output,"[mets_minute]")
+```
+
+# table pair 8
+```{r sleep_minute}
+minutesleep_merged_1 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minutesleep_merged_1.csv"))
+
+minutesleep_merged_2 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minutesleep_merged_2.csv"))
+
+output <- compare_dataframe_structure(
+  minutesleep_merged_1, minutesleep_merged_2)
+
+cat(output,"[sleep_minute]")
+```
+
+# table pair 9
+```{r steps_hourly}
+hourlysteps_merged_1 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/hourlysteps_merged_1.csv"))
+
+hourlysteps_merged_2 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/hourlysteps_merged_2.csv"))
+
+output <- compare_dataframe_structure(
+  hourlysteps_merged_1, hourlysteps_merged_2)
+
+cat(output,"[steps_hourly]")
+```
+
+# table pair 10
+```{r steps_minute}
+minutestepsnarrow_merged_1 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minutestepsnarrow_merged_1.csv"))
+
+minutestepsnarrow_merged_2 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/minutestepsnarrow_merged_2.csv"))
+
+output <- compare_dataframe_structure(
+  minutestepsnarrow_merged_1, minutestepsnarrow_merged_2)
+
+cat(output,"[steps_minute]")
+```
+
+# table pair 11
+```{r weight_NA}
+weightloginfo_merged_1 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/weightloginfo_merged_1.csv"))
+
+weightloginfo_merged_2 <- suppressMessages(
+  read_csv("../fitbit_fitness_tracker_data/weightloginfo_merged_2.csv"))
+
+output <- compare_dataframe_structure(
+  weightloginfo_merged_1, weightloginfo_merged_2)
+
+cat(output,"[weight_NA]")
+```
