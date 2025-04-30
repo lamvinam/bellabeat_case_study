@@ -1,14 +1,14 @@
 # Google Analytics Capstone Case Study: Bellabeat
 
 This repository contains the final project for the Google Analytics Professional Certificate program, 
-a case study exploring smart device user data to provide data-driven insights and recommendations.
+a case study exploring smart device user data to provide data-driven insights and recommendations. 
+>`R` programming language was used for this case study.
 
 ## Project Overview
 
 The goal of this case study was to apply the data analysis principles and tools learned in 
 the Google Analytics program to a real-world business problem. 
 The project involved analyzing data, identifying key trends, and providing actionable recommendations to marketing strategy.
-The tool of choice is R programming language.
 
 ## Case Study Question
 
